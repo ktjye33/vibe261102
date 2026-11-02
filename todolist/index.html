@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오늘의 할일</title>
+  <script>
+    // 첫 화면부터 저장된 테마를 적용해 깜빡임을 막는다.
+    try {
+      const theme = JSON.parse(localStorage.getItem('todolist:v1:settings'))?.theme;
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div class="title-row">
+        <h1>오늘의 할일</h1>
+        <div class="header-actions">
+          <button type="button" class="icon-btn" id="stats-open" aria-label="기간별 통계" title="기간별 통계">📊</button>
+          <button type="button" class="icon-btn" id="theme-toggle" aria-label="다크 모드로 전환">🌙</button>
+        </div>
+      </div>
+      <nav class="date-nav" aria-label="날짜 이동">
+        <button type="button" class="icon-btn" id="prev-day" aria-label="이전 날짜">‹</button>
+        <div class="date-picker">
+          <button type="button" class="date-label" id="date-label" aria-label="날짜 선택"></button>
+          <input type="date" id="date-input" tabindex="-1" aria-hidden="true">
+        </div>
+        <button type="button" class="icon-btn" id="next-day" aria-label="다음 날짜">›</button>
+        <button type="button" class="today-btn" id="go-today" hidden>오늘로</button>
+      </nav>
+    </header>
+
+    <p class="notice" id="notice" role="status" hidden></p>
+    <p class="readonly-notice" id="readonly-notice" hidden>지난 기록은 읽기 전용입니다.</p>
+
+    <form class="add-form" id="add-form" autocomplete="off">
+      <label class="visually-hidden" for="new-text">할 일</label>
+      <input id="new-text" type="text" maxlength="100" placeholder="할 일을 입력하세요...">
+      <label class="visually-hidden" for="new-priority">우선순위</label>
+      <select id="new-priority">
+        <option value="high">높음</option>
+        <option value="medium" selected>보통</option>
+        <option value="low">낮음</option>
+      </select>
+      <label class="visually-hidden" for="new-estimate">예상 시간</label>
+      <select id="new-estimate" class="estimate-select"></select>
+      <button type="submit">추가</button>
+    </form>
+
+    <section class="progress" id="progress" aria-label="진행률" hidden>
+      <p class="progress-text" id="progress-text"></p>
+      <div class="progress-track" id="progress-bar" role="progressbar"
+           aria-label="완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="estimate-summary" id="estimate-summary" hidden></p>
+    </section>
+
+    <div class="list-toolbar" id="list-toolbar" hidden>
+      <div class="filters" id="filters" role="group" aria-label="목록 필터">
+        <button type="button" class="filter" data-filter="all">전체 <span class="count"></span></button>
+        <button type="button" class="filter" data-filter="active">진행 중 <span class="count"></span></button>
+        <button type="button" class="filter" data-filter="done">완료 <span class="count"></span></button>
+      </div>
+      <label class="sort-control">
+        <span class="visually-hidden">정렬 방식</span>
+        <select id="sort-select">
+          <option value="priority">우선순위순</option>
+          <option value="manual">직접 정렬</option>
+        </select>
+      </label>
+    </div>
+
+    <ul class="todo-list" id="todo-list"></ul>
+    <p class="empty" id="empty-state" hidden></p>
+
+    <div class="list-footer" id="list-footer" hidden>
+      <button type="button" class="text-btn text-btn-danger" id="clear-completed"></button>
+    </div>
+
+    <footer class="app-footer">
+      <button type="button" class="text-btn" id="export-backup">백업 내보내기</button>
+      <button type="button" class="text-btn" id="import-backup">백업 가져오기</button>
+      <input type="file" id="import-input" accept="application/json,.json" hidden>
+    </footer>
+  </main>
+
+  <dialog class="dialog" id="carry-dialog" aria-labelledby="carry-title">
+    <form method="dialog">
+      <h2 id="carry-title"></h2>
+      <p>오늘 할 일로 가져올까요?</p>
+      <ul class="carry-list" id="carry-list"></ul>
+      <div class="dialog-actions">
+        <button type="submit" class="btn-secondary" value="skip">건너뛰기</button>
+        <button type="submit" class="btn-primary" value="carry" autofocus>가져오기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog stats-dialog" id="stats-dialog" aria-labelledby="stats-title">
+    <div class="dialog-head">
+      <h2 id="stats-title">기간별 통계</h2>
+      <button type="button" class="icon-btn" id="stats-close" aria-label="닫기">×</button>
+    </div>
+    <div class="segmented" id="stats-range" role="group" aria-label="기간">
+      <button type="button" data-range="7">최근 7일</button>
+      <button type="button" data-range="30">최근 30일</button>
+    </div>
+    <dl class="stat-tiles" id="stat-tiles"></dl>
+    <figure class="chart">
+      <figcaption class="chart-title">날짜별 완료율</figcaption>
+      <div class="chart-body">
+        <div class="chart-y" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div>
+        <div class="chart-plot" id="chart-plot">
+          <div class="gridline" style="bottom: 100%"></div>
+          <div class="gridline" style="bottom: 50%"></div>
+          <div class="gridline gridline-base" style="bottom: 0"></div>
+          <div class="chart-bars" id="chart-bars"></div>
+          <div class="chart-tip" id="chart-tip" role="tooltip" hidden></div>
+        </div>
+      </div>
+      <div class="chart-x" id="chart-x" aria-hidden="true"></div>
+    </figure>
+    <details class="stats-table-wrap">
+      <summary>표로 보기</summary>
+      <table class="stats-table">
+        <thead><tr><th scope="col">날짜</th><th scope="col">완료</th><th scope="col">전체</th><th scope="col">완료율</th></tr></thead>
+        <tbody id="stats-table-body"></tbody>
+      </table>
+    </details>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
