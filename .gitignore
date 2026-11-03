@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+.venv/
+
+# PyInstaller 빌드 결과
+build/
+dist/
+*.spec
