@@ -1,0 +1,47 @@
+{
+  "nextPostId": 5,
+  "nextCommentId": 3,
+  "posts": [
+    {
+      "id": 1,
+      "title": "게시판에 오신 것을 환영합니다",
+      "author": "관리자",
+      "content": "자유롭게 글을 작성해 주세요.\n작성 시 입력한 비밀번호로 수정/삭제할 수 있습니다.",
+      "passwordHash": "8652e602c9ab2f1e42536aa7d57c74cf:2a241167fd0d327603b074a739cd89b360d52841ce2aba0c8e86b7ee7f938738",
+      "views": 0,
+      "createdAt": "2026-11-02T21:01:43.085Z",
+      "updatedAt": "2026-11-02T21:01:43.085Z",
+      "comments": [
+        {
+          "id": 1,
+          "author": "방문자",
+          "content": "첫 댓글입니다!",
+          "passwordHash": "8652e602c9ab2f1e42536aa7d57c74cf:2a241167fd0d327603b074a739cd89b360d52841ce2aba0c8e86b7ee7f938738",
+          "createdAt": "2026-11-03T01:01:43.085Z"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Next.js 16 사용 후기",
+      "author": "개발자",
+      "content": "Cache Components와 Server Actions 조합이 꽤 편리하네요.",
+      "passwordHash": "8652e602c9ab2f1e42536aa7d57c74cf:2a241167fd0d327603b074a739cd89b360d52841ce2aba0c8e86b7ee7f938738",
+      "views": 1,
+      "createdAt": "2026-11-02T22:31:43.085Z",
+      "updatedAt": "2026-11-02T22:31:43.085Z",
+      "comments": []
+    },
+    {
+      "id": 3,
+      "title": "shadcn/ui 컴포넌트 추천",
+      "author": "디자이너",
+      "content": "Card, Table, Badge 정도만 있어도 게시판 UI는 충분합니다.",
+      "passwordHash": "8652e602c9ab2f1e42536aa7d57c74cf:2a241167fd0d327603b074a739cd89b360d52841ce2aba0c8e86b7ee7f938738",
+      "views": 0,
+      "createdAt": "2026-11-03T00:01:43.085Z",
+      "updatedAt": "2026-11-03T00:01:43.085Z",
+      "comments": []
+    }
+  ]
+}
