@@ -30,7 +30,8 @@ type Database = {
   posts: Post[]
 }
 
-const DATA_DIR = path.join(process.cwd(), "data")
+// BOARD_DATA_DIR is set in next.config.ts; the cwd fallback covers other runners.
+const DATA_DIR = process.env.BOARD_DATA_DIR ?? path.join(process.cwd(), "data")
 const DATA_FILE = path.join(DATA_DIR, "board.json")
 
 // Serialize writes so concurrent requests don't clobber each other.
