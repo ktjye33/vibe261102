@@ -11,6 +11,7 @@
 사용:
     python kurly_review/kurly_review_analyzer.py
 """
+import os
 import re
 import sys
 import time
@@ -21,7 +22,7 @@ import requests
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QIcon
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QComboBox, QFileDialog, QFrame, QGraphicsDropShadowEffect,
     QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMainWindow, QMessageBox,
@@ -736,9 +737,16 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"저장했습니다: {path}")
 
 
+def resource_path(name):
+    """PyInstaller 실행파일에서는 임시 압축해제 폴더(_MEIPASS), 평소에는 프로젝트 루트에서 찾는다."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return os.path.join(base, name)
+
+
 def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(STYLESHEET)
+    app.setWindowIcon(QIcon(resource_path("app.ico")))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
