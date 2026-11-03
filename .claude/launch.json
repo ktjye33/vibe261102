@@ -12,6 +12,12 @@
       "runtimeExecutable": "C:\\python313\\python.exe",
       "runtimeArgs": ["-m", "http.server", "8000", "--bind", "127.0.0.1", "--directory", "DemoPort"],
       "port": 8000
+    },
+    {
+      "name": "demoweb",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["DemoWeb/node_modules/next/dist/bin/next", "dev", "DemoWeb", "-p", "3100"],
+      "port": 3100
     }
   ]
 }
