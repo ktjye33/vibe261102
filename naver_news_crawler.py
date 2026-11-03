@@ -2,7 +2,7 @@
 네이버 검색 결과에서 뉴스 기사를 찾아 본문까지 크롤링하는 GUI 앱 (BeautifulSoup4 + PyQt6)
 
 설치:
-    pip install requests beautifulsoup4 PyQt6
+    pip install -r requirements.txt   (requests, beautifulsoup4, PyQt6, openpyxl)
 
 사용:
     python naver_news_crawler.py
@@ -15,6 +15,9 @@ from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
+from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+from openpyxl.styles import Alignment, Font, PatternFill
 from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
@@ -49,6 +52,9 @@ HEADERS = {
 NAVER_ARTICLE_RE = re.compile(r"https://n\.news\.naver\.com/(?:mnews/)?article/\d+/\d+")
 
 FIELDS = ["title", "press", "date", "url", "body"]
+FIELD_LABELS = {"title": "제목", "press": "언론사", "date": "날짜", "url": "URL", "body": "본문"}
+EXCEL_COLUMN_WIDTHS = {"title": 50, "press": 14, "date": 20, "url": 45, "body": 100}
+EXCEL_CELL_MAX = 32767  # 엑셀 셀 하나에 들어가는 최대 글자 수
 
 
 # ---------------------------------------------------------------- 크롤링 로직
@@ -118,6 +124,35 @@ def save_csv(articles, filename):
         writer.writerows(articles)
 
 
+def save_xlsx(articles, filename):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "뉴스"
+
+    ws.append([FIELD_LABELS[f] for f in FIELDS])
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="03C75A")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for article in articles:
+        # 엑셀이 허용하지 않는 제어 문자를 지우고, 셀 최대 길이에 맞춰 자른다.
+        ws.append([ILLEGAL_CHARACTERS_RE.sub("", article[f])[:EXCEL_CELL_MAX] for f in FIELDS])
+        row = ws.max_row
+        url_cell = ws.cell(row, FIELDS.index("url") + 1)
+        url_cell.hyperlink = article["url"]
+        url_cell.style = "Hyperlink"
+        for cell in ws[row]:
+            cell.alignment = Alignment(vertical="top", wrap_text=cell.column_letter != url_cell.column_letter)
+        ws.row_dimensions[row].height = 90
+
+    for col, field in enumerate(FIELDS, 1):
+        ws.column_dimensions[ws.cell(1, col).column_letter].width = EXCEL_COLUMN_WIDTHS[field]
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    wb.save(filename)
+
+
 # ---------------------------------------------------------------- GUI
 
 class CrawlWorker(QThread):
@@ -184,6 +219,9 @@ class MainWindow(QMainWindow):
         self.save_btn = QPushButton("CSV 저장")
         self.save_btn.setEnabled(False)
         self.save_btn.clicked.connect(self.save)
+        self.excel_btn = QPushButton("엑셀 저장")
+        self.excel_btn.setEnabled(False)
+        self.excel_btn.clicked.connect(self.save_excel)
 
         top = QHBoxLayout()
         top.addWidget(QLabel("검색어"))
@@ -193,6 +231,7 @@ class MainWindow(QMainWindow):
         top.addWidget(self.search_btn)
         top.addWidget(self.stop_btn)
         top.addWidget(self.save_btn)
+        top.addWidget(self.excel_btn)
 
         # 기사 목록
         self.table = QTableWidget(0, 3)
@@ -250,7 +289,9 @@ class MainWindow(QMainWindow):
     def set_running(self, running):
         self.search_btn.setEnabled(not running)
         self.stop_btn.setEnabled(running)
-        self.save_btn.setEnabled(not running and bool(self.articles))
+        can_save = not running and bool(self.articles)
+        self.save_btn.setEnabled(can_save)
+        self.excel_btn.setEnabled(can_save)
 
     def add_article(self, article):
         self.articles.append(article)
@@ -279,13 +320,21 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(self, "오류", message)
 
     def save(self):
-        default = f"naver_news_{self.query_edit.text().strip()}.csv"
-        filename, _ = QFileDialog.getSaveFileName(self, "CSV 저장", default, "CSV 파일 (*.csv)")
+        self.save_as("CSV 저장", "csv", "CSV 파일 (*.csv)", save_csv)
+
+    def save_excel(self):
+        self.save_as("엑셀 저장", "xlsx", "Excel 파일 (*.xlsx)", save_xlsx)
+
+    def save_as(self, caption, ext, file_filter, writer):
+        default = f"naver_news_{self.query_edit.text().strip()}.{ext}"
+        filename, _ = QFileDialog.getSaveFileName(self, caption, default, file_filter)
         if not filename:
             return
+        if not filename.lower().endswith(f".{ext}"):
+            filename += f".{ext}"
         try:
-            save_csv(self.articles, filename)
-        except OSError as e:
+            writer(self.articles, filename)
+        except OSError as e:  # 엑셀에서 같은 파일을 열어둔 경우 PermissionError
             self.show_error(f"저장 실패: {e}")
             return
         self.statusBar().showMessage(f"{len(self.articles)}개 기사를 {filename} 에 저장했습니다.")
