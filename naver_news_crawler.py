@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import time
+from collections import Counter
 from urllib.parse import quote
 
 import requests
@@ -55,9 +56,18 @@ HEADERS = {
 # 네이버 뉴스(본문을 네이버가 직접 호스팅하는 기사) 주소 패턴
 NAVER_ARTICLE_RE = re.compile(r"https://n\.news\.naver\.com/(?:mnews/)?article/\d+/\d+")
 
-FIELDS = ["title", "press", "date", "url", "body"]
-FIELD_LABELS = {"title": "제목", "press": "언론사", "date": "날짜", "url": "URL", "body": "본문"}
-EXCEL_COLUMN_WIDTHS = {"title": 50, "press": 14, "date": 20, "url": 45, "body": 100}
+FIELDS = ["title", "press", "date", "url", "summary", "body"]
+EXCEL_FIELDS = ["title", "press", "date", "url", "summary"]  # 엑셀은 본문 없이 요약만
+FIELD_LABELS = {"title": "제목", "press": "언론사", "date": "날짜", "url": "URL", "summary": "요약", "body": "본문"}
+EXCEL_COLUMN_WIDTHS = {"title": 50, "press": 14, "date": 20, "url": 45, "summary": 100}
+
+SUMMARY_SENTENCES = 3  # 요약에 뽑을 문장 수
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+WORD_RE = re.compile(r"[가-힣A-Za-z0-9]{2,}")
+JOSA_RE = re.compile(r"(으로|에서|에게|까지|부터|보다|처럼|은|는|이|가|을|를|에|의|로|와|과|도|만)$")
+BYLINE_RE = re.compile(r"^[\[(][^\])]*[\])]\s*(\S+\s+)?기자\s*=\s*")  # "(서울=뉴스1) 홍길동 기자 = "
+SENTENCE_END_RE = re.compile(r"[.!?][\"'”’)]*$")
+NOISE_RE = re.compile(r"@|ⓒ|©|무단|재배포|▲|사진=|제공=|기사제보")
 EXCEL_CELL_MAX = 32767  # 엑셀 셀 하나에 들어가는 최대 글자 수
 
 # 노랑을 메인으로 한 따뜻한 색감 팔레트
@@ -241,7 +251,47 @@ def parse_article(url):
             junk.decompose()
         body = body_tag.get_text("\n", strip=True)
 
-    return {"title": title, "press": press, "date": date, "url": url, "body": body}
+    return {
+        "title": title, "press": press, "date": date, "url": url,
+        "summary": summarize(body, title), "body": body,
+    }
+
+
+def tokenize(text):
+    """2글자 이상 단어를 뽑고 끝의 조사를 떼어 같은 단어끼리 묶이게 한다."""
+    words = (JOSA_RE.sub("", w) for w in WORD_RE.findall(text))
+    return [w for w in words if len(w) >= 2]
+
+
+def summarize(body, title="", n=SUMMARY_SENTENCES):
+    """본문에서 핵심 문장 n개를 골라내는 추출 요약.
+
+    본문에 자주 나오는 단어, 제목에 들어간 단어를 많이 포함할수록, 그리고 기사 앞쪽에 있을수록
+    높은 점수를 주고, 고른 문장은 원래 순서대로 이어 붙인다.
+    """
+    sentences = []
+    for s in SENTENCE_SPLIT_RE.split(body):
+        s = BYLINE_RE.sub("", s.strip())
+        # 마침표 등으로 끝나는 완결된 문장만 (소제목 제외)
+        if len(s) >= 25 and SENTENCE_END_RE.search(s) and not NOISE_RE.search(s):
+            sentences.append(s)
+    if len(sentences) <= n:
+        return "\n".join(sentences)
+
+    freq = Counter(w for s in sentences for w in tokenize(s))
+    title_words = set(tokenize(title))
+
+    def score(i):
+        words = tokenize(sentences[i])
+        if not words:
+            return 0
+        keyword = sum(freq[w] for w in words) / len(words)
+        title_hits = len(set(words) & title_words)
+        lead = 1.5 if i == 0 else 1.2 if i < 3 else 1.0
+        return (keyword + title_hits * 2) * lead
+
+    best = sorted(range(len(sentences)), key=score, reverse=True)[:n]
+    return "\n".join(sentences[i] for i in sorted(best))
 
 
 def save_csv(articles, filename):
@@ -256,7 +306,7 @@ def save_xlsx(articles, filename):
     ws = wb.active
     ws.title = "뉴스"
 
-    ws.append([FIELD_LABELS[f] for f in FIELDS])
+    ws.append([FIELD_LABELS[f] for f in EXCEL_FIELDS])
     for cell in ws[1]:
         cell.font = Font(bold=True, color=COLORS["text"][1:])
         cell.fill = PatternFill("solid", fgColor=COLORS["primary"][1:])
@@ -264,16 +314,16 @@ def save_xlsx(articles, filename):
 
     for article in articles:
         # 엑셀이 허용하지 않는 제어 문자를 지우고, 셀 최대 길이에 맞춰 자른다.
-        ws.append([ILLEGAL_CHARACTERS_RE.sub("", article[f])[:EXCEL_CELL_MAX] for f in FIELDS])
+        ws.append([ILLEGAL_CHARACTERS_RE.sub("", article[f])[:EXCEL_CELL_MAX] for f in EXCEL_FIELDS])
         row = ws.max_row
-        url_cell = ws.cell(row, FIELDS.index("url") + 1)
+        url_cell = ws.cell(row, EXCEL_FIELDS.index("url") + 1)
         url_cell.hyperlink = article["url"]
         url_cell.style = "Hyperlink"
         for cell in ws[row]:
             cell.alignment = Alignment(vertical="top", wrap_text=cell.column_letter != url_cell.column_letter)
         ws.row_dimensions[row].height = 90
 
-    for col, field in enumerate(FIELDS, 1):
+    for col, field in enumerate(EXCEL_FIELDS, 1):
         ws.column_dimensions[ws.cell(1, col).column_letter].width = EXCEL_COLUMN_WIDTHS[field]
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
@@ -565,6 +615,20 @@ class MainWindow(QMainWindow):
             f"<p style='margin:0 0 14px 0; line-height:170%;'>{p}</p>"
             for p in a["body"].split("\n") if p.strip()
         )
+        summary_items = "".join(
+            f"<p style='margin:0 0 8px 0; line-height:160%;'>"
+            f"<span style='color:{COLORS['primary_dark']}; font-weight:800;'>•</span>&nbsp; {s}</p>"
+            for s in a["summary"].split("\n") if s.strip()
+        ) or "<p>요약할 문장을 찾지 못했습니다.</p>"
+        summary_box = f"""
+            <table width="100%" cellpadding="14" cellspacing="0" style="margin:6px 0 18px 0;"
+                   bgcolor="#FFF6D9">
+              <tr><td style="border-left:4px solid {COLORS['primary']};">
+                <p style="margin:0 0 10px 0; color:{COLORS['accent']}; font-weight:800; font-size:13px;">
+                  핵심 요약</p>
+                {summary_items}
+              </td></tr>
+            </table>"""
         self.body_view.setHtml(f"""
             <div style="color:{COLORS['text']}; font-size:14px;">
               <p style="margin:0 0 12px 0;">
@@ -576,6 +640,7 @@ class MainWindow(QMainWindow):
               <p style="margin:0 0 18px 0;">
                 <a href="{a['url']}" style="color:{COLORS['accent']}; text-decoration:none; font-weight:600;">
                   원문 보기 →</a></p>
+              {summary_box}
               <hr style="background:{COLORS['border']};">
               <div style="margin-top:16px;">{paragraphs or '<p>본문을 가져오지 못했습니다.</p>'}</div>
             </div>""")
