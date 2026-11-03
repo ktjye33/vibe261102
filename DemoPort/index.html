@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DemoPort | Python · Web · iOS Developer</title>
+  <meta name="description" content="Python, HTML5, iOS 앱 개발을 주력으로 하는 개발자의 프로필과 포트폴리오입니다.">
+  <meta property="og:title" content="DemoPort | Python · Web · iOS Developer">
+  <meta property="og:description" content="Python, HTML5, iOS 앱 개발자 포트폴리오">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // 첫 렌더 전에 테마를 적용해 깜빡임을 막는다
+    try {
+      const saved = localStorage.getItem('theme');
+      if (saved) document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+
+  <header class="site-header">
+    <nav class="nav container" aria-label="주요 메뉴">
+      <a class="logo" href="#hero">Demo<span>Port</span></a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-menu" id="nav-menu">
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li>
+          <button class="theme-toggle" type="button" aria-label="다크 모드 전환">
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1.5 12h3M19.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section id="hero" class="hero">
+      <div class="container hero-inner">
+        <p class="hero-greeting">안녕하세요, 저는</p>
+        <h1 class="hero-title">홍길동<span class="dot">.</span></h1>
+        <p class="hero-subtitle">Python · Web · iOS Developer</p>
+        <p class="hero-desc">아이디어를 빠르게 동작하는 서비스로 만듭니다. 백엔드부터 웹, 그리고 iPhone 앱까지.</p>
+        <ul class="hero-badges" aria-label="주력 분야">
+          <li class="badge badge-python">Python</li>
+          <li class="badge badge-html">HTML5</li>
+          <li class="badge badge-ios">iOS</li>
+        </ul>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#projects">프로젝트 보기</a>
+          <a class="btn btn-ghost" href="#contact">연락하기</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="section">
+      <div class="container">
+        <h2 class="section-title"><span>01.</span> About</h2>
+        <div class="about-grid">
+          <div class="about-text">
+            <p>Python으로 서버와 자동화 도구를 만들고, HTML5로 누구나 쓰기 쉬운 웹을 만들며, Swift로 손에 잡히는 iOS 앱을 개발합니다.</p>
+            <p>하나의 아이디어를 백엔드 API, 웹 프런트엔드, 모바일 앱까지 끝에서 끝으로 구현할 수 있는 것이 저의 강점입니다.</p>
+            <p>읽기 쉬운 코드, 빠른 피드백, 사용자 입장에서의 디테일을 중요하게 생각합니다.</p>
+          </div>
+          <div class="about-photo" aria-hidden="true">
+            <div class="avatar">HG</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="section section-alt">
+      <div class="container">
+        <h2 class="section-title"><span>02.</span> Skills</h2>
+        <div class="skills-grid">
+          <article class="skill-card" data-accent="python">
+            <h3>Python</h3>
+            <ul>
+              <li>Python 3 <em class="lvl lvl-main">주력</em></li>
+              <li>FastAPI / Django <em class="lvl lvl-good">능숙</em></li>
+              <li>pandas 데이터 처리 <em class="lvl lvl-good">능숙</em></li>
+              <li>자동화 스크립트 <em class="lvl lvl-main">주력</em></li>
+            </ul>
+          </article>
+          <article class="skill-card" data-accent="html">
+            <h3>HTML5 / Web</h3>
+            <ul>
+              <li>HTML5 · CSS3 <em class="lvl lvl-main">주력</em></li>
+              <li>JavaScript <em class="lvl lvl-good">능숙</em></li>
+              <li>반응형 웹 <em class="lvl lvl-main">주력</em></li>
+              <li>웹 접근성 <em class="lvl lvl-good">능숙</em></li>
+            </ul>
+          </article>
+          <article class="skill-card" data-accent="ios">
+            <h3>iOS</h3>
+            <ul>
+              <li>Swift <em class="lvl lvl-main">주력</em></li>
+              <li>SwiftUI <em class="lvl lvl-main">주력</em></li>
+              <li>UIKit <em class="lvl lvl-good">능숙</em></li>
+              <li>App Store 배포 <em class="lvl lvl-good">능숙</em></li>
+            </ul>
+          </article>
+          <article class="skill-card" data-accent="tools">
+            <h3>Tools</h3>
+            <ul>
+              <li>Git · GitHub <em class="lvl lvl-main">주력</em></li>
+              <li>REST API 설계 <em class="lvl lvl-good">능숙</em></li>
+              <li>Xcode <em class="lvl lvl-good">능숙</em></li>
+              <li>Docker <em class="lvl lvl-exp">사용 경험</em></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="section">
+      <div class="container">
+        <h2 class="section-title"><span>03.</span> Projects</h2>
+        <div class="filters" role="group" aria-label="프로젝트 분야 필터">
+          <button class="filter-btn active" data-filter="all" aria-pressed="true">전체</button>
+          <button class="filter-btn" data-filter="python" aria-pressed="false">Python</button>
+          <button class="filter-btn" data-filter="web" aria-pressed="false">Web</button>
+          <button class="filter-btn" data-filter="ios" aria-pressed="false">iOS</button>
+        </div>
+        <div class="projects-grid" id="projects-grid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience" class="section section-alt">
+      <div class="container">
+        <h2 class="section-title"><span>04.</span> Experience</h2>
+        <ol class="timeline" id="timeline"></ol>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="section contact">
+      <div class="container contact-inner">
+        <h2 class="section-title center"><span>05.</span> Contact</h2>
+        <p class="contact-desc">채용, 외주, 협업 제안 모두 환영합니다. 편하게 연락 주세요.</p>
+        <div class="email-box">
+          <a class="email-link" href="mailto:ktjye33@gmail.com">ktjye33@gmail.com</a>
+          <button class="btn btn-small copy-btn" type="button" data-copy="ktjye33@gmail.com">복사</button>
+        </div>
+        <a class="btn btn-primary" href="mailto:ktjye33@gmail.com">이메일 보내기</a>
+        <ul class="socials">
+          <li><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year"></span> DemoPort. Built with HTML5, CSS3 &amp; JavaScript.</p>
+    </div>
+  </footer>
+
+  <!-- Project detail modal -->
+  <dialog class="modal" id="project-modal" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <button class="modal-close" type="button" aria-label="닫기">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

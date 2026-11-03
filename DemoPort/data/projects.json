@@ -1,0 +1,74 @@
+[
+  {
+    "id": "auto-report",
+    "title": "업무 자동화 리포트 봇",
+    "category": "python",
+    "summary": "매일 엑셀 데이터를 집계해 리포트를 만들고 메일로 보내는 자동화 도구.",
+    "tags": ["Python", "pandas", "openpyxl", "schedule"],
+    "problem": "팀원이 매일 아침 30분씩 수작업으로 판매 데이터를 정리해야 했습니다.",
+    "role": "기획부터 개발, 배포까지 1인 개발",
+    "solution": "pandas로 데이터를 집계하고 차트를 포함한 엑셀 리포트를 생성한 뒤, 스케줄러로 매일 자동 발송하도록 구성했습니다.",
+    "result": "하루 30분의 반복 업무를 없애고 집계 오류를 0건으로 줄였습니다.",
+    "links": { "github": "https://github.com/" }
+  },
+  {
+    "id": "todo-api",
+    "title": "FastAPI 할 일 관리 API",
+    "category": "python",
+    "summary": "JWT 인증과 자동 문서화를 갖춘 REST API 서버.",
+    "tags": ["Python", "FastAPI", "SQLite", "JWT"],
+    "problem": "웹과 iOS 앱이 함께 사용할 수 있는 가벼운 백엔드가 필요했습니다.",
+    "role": "API 설계 및 백엔드 개발",
+    "solution": "FastAPI로 엔드포인트를 설계하고 Pydantic 모델로 입력을 검증했으며, OpenAPI 문서를 자동 생성했습니다.",
+    "result": "웹과 iOS 클라이언트가 같은 API를 공유해 개발 기간을 단축했습니다.",
+    "links": { "github": "https://github.com/" }
+  },
+  {
+    "id": "landing-page",
+    "title": "반응형 랜딩 페이지",
+    "category": "web",
+    "summary": "프레임워크 없이 HTML5와 CSS3만으로 만든 고성능 랜딩 페이지.",
+    "tags": ["HTML5", "CSS3", "JavaScript", "접근성"],
+    "problem": "기존 페이지가 모바일에서 느리고 레이아웃이 깨졌습니다.",
+    "role": "퍼블리싱 및 프런트엔드 개발",
+    "solution": "시맨틱 마크업과 CSS Grid로 다시 구성하고, 이미지 지연 로딩과 WebP를 적용했습니다.",
+    "result": "Lighthouse 성능 점수를 58점에서 97점으로 올렸습니다.",
+    "links": { "github": "https://github.com/", "demo": "https://example.com/" }
+  },
+  {
+    "id": "canvas-game",
+    "title": "HTML5 Canvas 미니 게임",
+    "category": "web",
+    "summary": "Canvas API로 만든 브라우저 아케이드 게임.",
+    "tags": ["HTML5 Canvas", "JavaScript", "Web Audio"],
+    "problem": "설치 없이 모바일 브라우저에서 바로 즐길 수 있는 게임을 만들고 싶었습니다.",
+    "role": "게임 로직 및 렌더링 개발",
+    "solution": "requestAnimationFrame 기반 게임 루프와 터치·키보드 입력을 모두 지원하도록 구현했습니다.",
+    "result": "데스크톱과 모바일에서 60fps로 동작합니다.",
+    "links": { "github": "https://github.com/", "demo": "https://example.com/" }
+  },
+  {
+    "id": "habit-app",
+    "title": "습관 트래커 iOS 앱",
+    "category": "ios",
+    "summary": "SwiftUI로 만든 하루 습관 기록 앱과 홈 화면 위젯.",
+    "tags": ["Swift", "SwiftUI", "SwiftData", "WidgetKit"],
+    "problem": "복잡한 습관 앱 대신 하루 한 번 탭으로 끝나는 단순한 앱이 필요했습니다.",
+    "role": "iOS 앱 설계, 개발, App Store 배포",
+    "solution": "SwiftUI와 SwiftData로 로컬 저장을 구현하고, WidgetKit으로 홈 화면에서 바로 체크할 수 있게 했습니다.",
+    "result": "App Store에 출시해 평점 4.7점을 받았습니다.",
+    "links": { "github": "https://github.com/", "appstore": "https://www.apple.com/app-store/" }
+  },
+  {
+    "id": "weather-app",
+    "title": "날씨 알림 iOS 앱",
+    "category": "ios",
+    "summary": "위치 기반 날씨 정보와 비 소식 푸시 알림을 제공하는 앱.",
+    "tags": ["Swift", "UIKit", "CoreLocation", "Push"],
+    "problem": "외출 전에 비 소식을 놓치는 일이 잦았습니다.",
+    "role": "iOS 앱 개발 및 Python 알림 서버 개발",
+    "solution": "CoreLocation으로 위치를 받고, Python 서버가 강수 예보를 확인해 푸시 알림을 보내도록 연동했습니다.",
+    "result": "Python 백엔드와 iOS 앱을 함께 설계한 풀스택 프로젝트입니다.",
+    "links": { "github": "https://github.com/" }
+  }
+]

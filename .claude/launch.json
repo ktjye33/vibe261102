@@ -6,6 +6,12 @@
       "runtimeExecutable": "C:\\python313\\python.exe",
       "runtimeArgs": ["-m", "http.server", "5173", "--bind", "127.0.0.1", "--directory", "todolist"],
       "port": 5173
+    },
+    {
+      "name": "demoport",
+      "runtimeExecutable": "C:\\python313\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8000", "--bind", "127.0.0.1", "--directory", "DemoPort"],
+      "port": 8000
     }
   ]
 }
