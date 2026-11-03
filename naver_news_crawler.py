@@ -1,12 +1,11 @@
 """
-네이버 검색 결과에서 뉴스 기사를 찾아 본문까지 크롤링하는 스크립트 (BeautifulSoup4)
+네이버 검색 결과에서 뉴스 기사를 찾아 본문까지 크롤링하는 GUI 앱 (BeautifulSoup4 + PyQt6)
 
 설치:
-    pip install requests beautifulsoup4
+    pip install requests beautifulsoup4 PyQt6
 
 사용:
-    python naver_news_crawler.py            # 기본 검색어 '반도체'
-    python naver_news_crawler.py 인공지능 20  # 검색어, 최대 기사 수
+    python naver_news_crawler.py
 """
 import csv
 import re
@@ -16,6 +15,27 @@ from urllib.parse import quote
 
 import requests
 from bs4 import BeautifulSoup
+from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
+)
 
 HEADERS = {
     "User-Agent": (
@@ -28,9 +48,13 @@ HEADERS = {
 # 네이버 뉴스(본문을 네이버가 직접 호스팅하는 기사) 주소 패턴
 NAVER_ARTICLE_RE = re.compile(r"https://n\.news\.naver\.com/(?:mnews/)?article/\d+/\d+")
 
+FIELDS = ["title", "press", "date", "url", "body"]
+
+
+# ---------------------------------------------------------------- 크롤링 로직
 
 def build_search_urls(query):
-    """사용자가 준 통합검색(nexearch) URL과, 기사가 더 많이 나오는 뉴스탭 URL."""
+    """통합검색(nexearch) URL과, 기사가 더 많이 나오는 뉴스탭 URL."""
     q = quote(query)
     return [
         f"https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={q}",
@@ -89,34 +113,195 @@ def parse_article(url):
 
 def save_csv(articles, filename):
     with open(filename, "w", newline="", encoding="utf-8-sig") as f:  # 엑셀 한글 깨짐 방지
-        writer = csv.DictWriter(f, fieldnames=["title", "press", "date", "url", "body"])
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(articles)
 
 
-def main():
-    query = sys.argv[1] if len(sys.argv) > 1 else "반도체"
-    limit = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+# ---------------------------------------------------------------- GUI
 
-    links = collect_article_links(query, limit)
-    print(f"[{query}] 기사 링크 {len(links)}개 수집\n")
+class CrawlWorker(QThread):
+    """네트워크 작업을 별도 스레드에서 실행해 창이 멈추지 않게 한다."""
 
-    articles = []
-    for i, link in enumerate(links, 1):
+    status = pyqtSignal(str)
+    article = pyqtSignal(dict)
+    failed = pyqtSignal(str)
+
+    def __init__(self, query, limit):
+        super().__init__()
+        self.query = query
+        self.limit = limit
+
+    def run(self):
         try:
-            article = parse_article(link)
+            self.status.emit(f"'{self.query}' 검색 결과에서 기사 링크를 찾는 중...")
+            links = collect_article_links(self.query, self.limit)
         except requests.RequestException as e:
-            print(f"{i}. 실패: {link} ({e})")
-            continue
-        articles.append(article)
-        print(f"{i}. [{article['press']}] {article['title']} ({article['date']})")
-        print(f"   {article['url']}")
-        print(f"   {article['body'][:150].replace(chr(10), ' ')}...\n")
-        time.sleep(0.5)  # 서버 부담을 줄이기 위한 요청 간격
+            self.failed.emit(f"검색 실패: {e}")
+            return
 
-    filename = f"naver_news_{query}.csv"
-    save_csv(articles, filename)
-    print(f"{len(articles)}개 기사를 {filename} 에 저장했습니다.")
+        if not links:
+            self.status.emit("기사 링크를 찾지 못했습니다.")
+            return
+
+        for i, link in enumerate(links, 1):
+            if self.isInterruptionRequested():
+                self.status.emit("중지되었습니다.")
+                return
+            self.status.emit(f"기사 수집 중... ({i}/{len(links)})")
+            try:
+                self.article.emit(parse_article(link))
+            except requests.RequestException as e:
+                self.status.emit(f"실패: {link} ({e})")
+            time.sleep(0.5)  # 서버 부담을 줄이기 위한 요청 간격
+
+        self.status.emit(f"완료: 기사 {len(links)}개")
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("네이버 뉴스 크롤러")
+        self.resize(1100, 700)
+        self.articles = []
+        self.worker = None
+
+        # 검색 조건
+        self.query_edit = QLineEdit("반도체")
+        self.query_edit.setPlaceholderText("검색어")
+        self.query_edit.returnPressed.connect(self.start_crawl)
+
+        self.limit_spin = QSpinBox()
+        self.limit_spin.setRange(1, 100)
+        self.limit_spin.setValue(10)
+        self.limit_spin.setSuffix(" 개")
+
+        self.search_btn = QPushButton("검색")
+        self.search_btn.clicked.connect(self.start_crawl)
+        self.stop_btn = QPushButton("중지")
+        self.stop_btn.setEnabled(False)
+        self.stop_btn.clicked.connect(self.stop_crawl)
+        self.save_btn = QPushButton("CSV 저장")
+        self.save_btn.setEnabled(False)
+        self.save_btn.clicked.connect(self.save)
+
+        top = QHBoxLayout()
+        top.addWidget(QLabel("검색어"))
+        top.addWidget(self.query_edit, 1)
+        top.addWidget(QLabel("최대"))
+        top.addWidget(self.limit_spin)
+        top.addWidget(self.search_btn)
+        top.addWidget(self.stop_btn)
+        top.addWidget(self.save_btn)
+
+        # 기사 목록
+        self.table = QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["언론사", "제목", "날짜"])
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.currentCellChanged.connect(lambda row, *_: self.show_article(row))
+        self.table.cellDoubleClicked.connect(self.open_in_browser)
+
+        # 기사 본문
+        self.body_view = QTextBrowser()
+        self.body_view.setOpenExternalLinks(True)
+
+        splitter = QSplitter(Qt.Orientation.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(self.body_view)
+        splitter.setSizes([300, 400])
+
+        layout = QVBoxLayout()
+        layout.addLayout(top)
+        layout.addWidget(splitter)
+        central = QWidget()
+        central.setLayout(layout)
+        self.setCentralWidget(central)
+
+        self.statusBar().showMessage("검색어를 입력하고 [검색]을 누르세요. 기사를 더블클릭하면 브라우저로 엽니다.")
+
+    def start_crawl(self):
+        query = self.query_edit.text().strip()
+        if not query or (self.worker and self.worker.isRunning()):
+            return
+
+        self.articles.clear()
+        self.table.setRowCount(0)
+        self.body_view.clear()
+        self.set_running(True)
+
+        self.worker = CrawlWorker(query, self.limit_spin.value())
+        self.worker.status.connect(self.statusBar().showMessage)
+        self.worker.article.connect(self.add_article)
+        self.worker.failed.connect(self.show_error)
+        self.worker.finished.connect(lambda: self.set_running(False))
+        self.worker.start()
+
+    def stop_crawl(self):
+        if self.worker:
+            self.worker.requestInterruption()
+
+    def set_running(self, running):
+        self.search_btn.setEnabled(not running)
+        self.stop_btn.setEnabled(running)
+        self.save_btn.setEnabled(not running and bool(self.articles))
+
+    def add_article(self, article):
+        self.articles.append(article)
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        for col, key in enumerate(["press", "title", "date"]):
+            self.table.setItem(row, col, QTableWidgetItem(article[key]))
+        if row == 0:
+            self.table.selectRow(0)
+
+    def show_article(self, row):
+        if not 0 <= row < len(self.articles):
+            return
+        a = self.articles[row]
+        self.body_view.setMarkdown(
+            f"## {a['title']}\n\n"
+            f"**{a['press']}** · {a['date']} · [원문 보기]({a['url']})\n\n---\n\n"
+            + a["body"].replace("\n", "\n\n")
+        )
+
+    def open_in_browser(self, row, _col):
+        QDesktopServices.openUrl(QUrl(self.articles[row]["url"]))
+
+    def show_error(self, message):
+        self.statusBar().showMessage(message)
+        QMessageBox.warning(self, "오류", message)
+
+    def save(self):
+        default = f"naver_news_{self.query_edit.text().strip()}.csv"
+        filename, _ = QFileDialog.getSaveFileName(self, "CSV 저장", default, "CSV 파일 (*.csv)")
+        if not filename:
+            return
+        try:
+            save_csv(self.articles, filename)
+        except OSError as e:
+            self.show_error(f"저장 실패: {e}")
+            return
+        self.statusBar().showMessage(f"{len(self.articles)}개 기사를 {filename} 에 저장했습니다.")
+
+    def closeEvent(self, event):
+        if self.worker and self.worker.isRunning():
+            self.worker.requestInterruption()
+            self.worker.wait()
+        event.accept()
+
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
